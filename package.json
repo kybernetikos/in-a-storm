@@ -1,0 +1,22 @@
+{
+  "name": "in-a-storm",
+  "version": "0.0.1",
+  "description": "Find a port to run your server on.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "kybernetikos@gmail.com",
+  "license": "MIT",
+  "dependencies": {  },
+	"devDependencies": {
+		"mocha": "~1.12.0",
+		"restify": "~2.6.0",
+		"express": "~3.3.5"
+	},
+	"scripts": {
+		"test": "./node_modules/.bin/mocha -R spec",
+		"test-frameworks": "./node_modules/.bin/mocha -R spec ./test/frameworks"
+	},
+	"engines" : { "node" : ">=0.8.0" }
+}
