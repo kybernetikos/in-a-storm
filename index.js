@@ -65,8 +65,12 @@ var listen = module.exports = function listen(server, options, callback) {
 	loopAsync(function(next, done) {
 		var d = require('domain').create();
 		d.on('error', function(err) {
-			port = portItr() || 0;
-			next();
+			if (port === 0) {
+				callback(err);
+			} else {
+				port = portItr() || 0;
+				next();
+			}
 		});
 
 		d.add(server);
