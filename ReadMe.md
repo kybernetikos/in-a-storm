@@ -16,7 +16,6 @@ that exposes the same interface as the node `net.Server` class.  It returns
 a promise that will be fulfilled with the port number it is listening on.
 
 ```js
-
 var listen = require('in-a-storm');
 
 listen(app).then(function(port) {
@@ -30,7 +29,6 @@ listen(app).then(function(port) {
 }).catch(function(err) {
 	console.error('Something weird happened and I was unable to bind to any port at all : ' + err);
 });
-
 ```
 
 It will select an unused port, and bind your app to it.
@@ -46,7 +44,6 @@ There are a number of ways to specify preferences for ports to use.
 
 
 ```js
-
 // try port 8080, if that fails, select a random port.
 listen(server, 8080);
 listen(server, "8080");
@@ -59,18 +56,19 @@ listen(server, [80, 8080, "1000-1002"]);
 
 // bind to a specific host address 'myhost' with backlog.
 listen(server, [80, 8080, "1000-1002"], 'myhost', backlog);
-
 ```
 
 ### Compatible Servers
 
-All servers that behave like net.Server will work.
+All servers that behave like net.Server will work (this includes http.Server, https.Server,
+restify.Server).
 
-To work correctly, the listen functions first argument must be the port to bind to and it must emit
-a 'listening' event when the port is successfully bound.  It should also emit an error event if the
-port cannot be bound. If the port is set to 0, then a random available port must be chosen.  In
-order for in-a-storm to find out which port has been chosen, the server must provide a .address()
-method providing a result with the port on it.
+To work correctly, the server must have a listen functions whose first argument must be the port to
+bind to. The server must also be an emitter and must emit a 'listening' event when the port is
+successfully bound.  It should also emit an error event if the port cannot be bound.
+If the port is set to 0, then a random available port must be chosen.  In order for in-a-storm to
+find out which port has been chosen, the server must provide a 'address' method providing a result
+with the port on it.
 
 If you call the listen function with a function instead of a server object, it is assumed that this
 is an http handler like an express app, and an http server is created for it.
