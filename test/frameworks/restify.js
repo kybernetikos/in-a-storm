@@ -14,7 +14,7 @@ describe('restify', function () {
     });
 
     it('server fails when binding to held port; uses next', function (done) {
-        listen(server2, 10004, function (err, port_) {
+        listen(server2, "10004-10006").then(function(port_) {
             assert(port_ > port);
             done();
         });

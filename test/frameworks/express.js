@@ -14,7 +14,7 @@ describe('express', function () {
     });
 
     it('server fails when binding to held port; uses next', function (done) {
-        listen(server2, "10000-10002", function (err, port_) {
+        listen(server2, "10000-10002").then(function(port_) {
             assert(port_ > port);
             done();
         });

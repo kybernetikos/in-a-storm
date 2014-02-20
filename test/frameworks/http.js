@@ -19,8 +19,7 @@ describe('http', function () {
     });
 
     it('server fails when binding to held port; uses next', function (done) {
-        listen(server2, "10002-10010", function (err, port_) {
-	        console.log(port_, port);
+        listen(server2, "10002-10010").then(function(port_) {
             assert(port_ > port);
             done();
         });

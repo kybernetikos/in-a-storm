@@ -1,6 +1,8 @@
 var net = require('net');
 var http = require('http');
 var https = require('https');
+var Promise = require('bluebird');
+var domain = require('domain');
 
 var itr = require('./iterator');
 
@@ -25,31 +27,24 @@ function replaceWithDefaults(value) {
 	return value;
 }
 
-function loopAsync(fn, finalCallback) {
+function loopAsync(fn) {
 	function next() {
-		fn(next, finalCallback);
+		fn(next);
 	}
 	next();
 }
 
-var listen = module.exports = function listen(server, options, callback) {
-
-	if (arguments.length === 2) {
-		callback = options;
-		options = {};
-	}
-	var optionsType = typeof(options);
-	if (optionsType === 'string' || optionsType === 'number' || Array.isArray(options)) {
-		options = {
-			port: options
-		};
+var listen = module.exports = function listen(server, ports) {
+	var otherArgs = [];
+	if (arguments.length > 2) {
+		otherArgs = Array.prototype.slice.call(arguments, 2);
 	}
 
-	options = options || {};
-
-	var host = options.host;
-	var backlog = options.backlog;
-	var ports = options.port;
+	// this is to make it possible to directly call listen with an http handler, e.g. an express app.
+	if (typeof server === 'function') {
+		var app = server;
+		server = http.createServer(app);
+	}
 
 	if (ports == null) {
 		if (server instanceof http.Server) {
@@ -61,33 +56,37 @@ var listen = module.exports = function listen(server, options, callback) {
 
 	var portItr = itr.getIterator(replaceWithDefaults(ports));
 
-	var port = portItr() || 0;
-	loopAsync(function(next, done) {
-		var d = require('domain').create();
-		d.on('error', function(err) {
-			if (port === 0) {
-				callback(err);
-			} else {
-				port = portItr() || 0;
-				next();
-			}
-		});
+	return new Promise(function(resolve, reject) {
+		var port = portItr() || 0;
 
-		d.add(server);
-
-		d.run(function () {
-			server.listen(port, host, backlog, function () {
-				done(port);
-			});
-		});
-	}, function(attemptedPort) {
-		if (callback) {
-			var actualPort = attemptedPort;
+		server.on('listening', function success() {
+			var actualPort = port;
 			if (actualPort === 0 && server.address) {
 				actualPort = server.address().port;
 			}
-			callback(null, actualPort);
-			callback = null; // avoid multi callbacks as happens in restify
-		}
+			resolve(actualPort);
+		});
+
+		loopAsync(function(next) {
+			var d = domain.create();
+			d.on('error', function(err) {
+				if (port === 0) {
+					// We tried everything and it still didn't work...
+					reject(err);
+				} else {
+					// Didn't work, try again with the next port...
+					port = portItr() || 0;
+					next();
+				}
+			});
+
+			d.add(server);
+
+			d.run(function () {
+				var args = otherArgs.slice();
+				args.unshift(port);
+				server.listen.apply(server, args);
+			});
+		});
 	});
 };

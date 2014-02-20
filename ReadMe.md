@@ -3,7 +3,8 @@ In A Storm
 
 Finds a port to bind your server to.  'In A Storm' is inspired by (and some code has been
 taken from) [find-and-bind](https://github.com/gyllstromk/node-find-and-bind), but gives
-you more ways of specifying what port(s) you want.
+you more ways of specifying what port(s) you want, and uses promises rather than node style
+callbacks.
 
     $ npm install in-a-storm
 
@@ -11,15 +12,25 @@ Usage
 -----
 
 'In A Storm' provides a listen function that is designed to work with any server
-that exposes the same interface for a listen method as the node `net.Server` class.
+that exposes the same interface as the node `net.Server` class.  It returns
+a promise that will be fulfilled with the port number it is listening on.
 
 ```js
 
 var listen = require('in-a-storm');
 
-listen(app, function(err, port) {
+listen(app).then(function(port) {
 	console.log('Listening on port', port);
 });
+
+// or....
+
+listen(app).then(function(port) {
+	console.log('Listening on port', port);
+}).catch(function(err) {
+	console.error('Something weird happened and I was unable to bind to any port at all : ' + err);
+});
+
 ```
 
 It will select an unused port, and bind your app to it.
@@ -37,33 +48,38 @@ There are a number of ways to specify preferences for ports to use.
 ```js
 
 // try port 8080, if that fails, select a random port.
-listen(server, 8080, function(err, port) {});
-listen(server, "8080", function(err, port) {});
+listen(server, 8080);
+listen(server, "8080");
 
 // try port 8080, then 8081, then 8082, then if that fails, select a random port.
-listen(server, "8080-8082", function(err, port) {});
+listen(server, "8080-8082");
 
 // try port 80, then port 8080, then port 1000, then port 1001, then 1002, then a random port.
-listen(server, [80, 8080, "1000-1002"], function(err, port) {});
+listen(server, [80, 8080, "1000-1002"]);
 
 // bind to a specific host address 'myhost' with backlog.
-listen(server, {
-		host: myhost,
-		backlog: backlog,
-		port: [80, 8080, "1000-1002"]
-},	function(err, port) {});
+listen(server, [80, 8080, "1000-1002"], 'myhost', backlog);
 
 ```
+
+### Compatible Servers
+
+All servers that behave like net.Server will work.
+
+To work correctly, the listen functions first argument must be the port to bind to and it must emit
+a 'listening' event when the port is successfully bound.  It should also emit an error event if the
+port cannot be bound. If the port is set to 0, then a random available port must be chosen.  In
+order for in-a-storm to find out which port has been chosen, the server must provide a .address()
+method providing a result with the port on it.
+
+If you call the listen function with a function instead of a server object, it is assumed that this
+is an http handler like an express app, and an http server is created for it.
 
 Future Work
 -----------
 
-The tests are mainly just modified versions of what findandbind does, so more work is needed
+The tests are mainly just modified versions of what find-and-bind does, so more work is needed
 there.
-
-The listen with the backlog optional value is relatively new, so not every
-kind of server will support this way of listening.  It might be better to just pass all
-arguments through to the underlying listen, and just change the first argument.
 
 There might well be other sensible default behaviours that can be added based on the
 instance of the server.
